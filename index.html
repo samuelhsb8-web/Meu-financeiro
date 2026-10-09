@@ -5,10 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1117">
-<meta name="description" content="Organize suas entradas, gastos, reserva e metas financeiras.">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
 <title>Meu Financeiro</title>
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1d2430;--text:#f3f5f7;--muted:#9da7b5;--line:#2b3340;--accent:#7c9cff;--good:#51d88a;--warn:#f1c75b;--bad:#ff7474}
@@ -106,13 +102,22 @@ display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px calc(8px + env(
     <h2>💸 Registrar movimentação</h2>
     <div class="formgrid">
       <div><label class="label">Tipo</label><select id="type"><option value="expense">Gasto</option><option value="income">Entrada</option></select></div>
-      <div><label class="label">Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"></div>
+      <div><label class="label">Valor (R$)</label><input id="amount" type="number" step="0.01" min="0.01" placeholder="0,00"></div>
+      <div><label class="label">Categoria</label><select id="category"><option>Salário</option><option>Benefício/apoio</option><option>Alimentação</option><option>Transporte</option><option>Faculdade</option><option>Moradia</option><option>Celular/assinaturas</option><option>Lazer</option><option>Saúde</option><option>Compras</option><option>CNH</option><option>Reserva</option><option>Outros</option></select></div>
+      <div><label class="label">Data</label><input id="txDate" type="date"></div>
       <div class="full"><label class="label">Descrição</label><input id="desc" type="text" placeholder="Ex.: lazer, salário, CNH..."></div>
-      <button class="primary full" onclick="addTransaction()">Adicionar</button>
+      <button class="primary full" id="txSubmit" onclick="addTransaction()">Adicionar movimentação</button>
+      <button class="secondary full" id="txCancel" style="display:none" onclick="cancelEdit()">Cancelar edição</button>
     </div>
   </div>
   <div class="card">
     <div class="row"><h2>📋 Movimentações</h2><button class="danger smallbtn" onclick="clearTransactions()">Limpar</button></div>
+    <div class="formgrid" style="margin-bottom:10px">
+      <div class="full"><label class="label">Filtrar por mês</label><input id="monthFilter" type="month" onchange="renderTransactions()"></div>
+      <div><label class="label">Tipo</label><select id="typeFilter" onchange="renderTransactions()"><option value="all">Todos</option><option value="income">Entradas</option><option value="expense">Gastos</option></select></div>
+      <div><label class="label">Categoria</label><select id="categoryFilter" onchange="renderTransactions()"><option value="all">Todas</option><option>Salário</option><option>Benefício/apoio</option><option>Alimentação</option><option>Transporte</option><option>Faculdade</option><option>Moradia</option><option>Celular/assinaturas</option><option>Lazer</option><option>Saúde</option><option>Compras</option><option>CNH</option><option>Reserva</option><option>Outros</option></select></div>
+    </div>
+    <div id="monthSummary" class="note" style="margin-bottom:10px"></div>
     <div id="transactions"></div>
   </div>
 </section>
@@ -197,11 +202,39 @@ const defaultState={
   {name:"Tênis Logus",price:0,done:false},{name:"Calça",price:0,done:false},
   {name:"Meia",price:0,done:false},{name:"Fone com fio",price:0,done:false}
  ]};
-let state=JSON.parse(localStorage.getItem("meuFinanceiro")||"null")||defaultState;
-function persist(){localStorage.setItem("meuFinanceiro",JSON.stringify(state))}
+// Alguns editores executam a prévia em um ambiente que bloqueia o localStorage.
+// Nesse caso, o app continua funcionando durante a sessão, mesmo sem persistência.
+let storageAvailable = true;
+let state = (() => {
+  try {
+    const saved = localStorage.getItem("meuFinanceiro");
+    return saved ? { ...JSON.parse(saved) } : JSON.parse(JSON.stringify(defaultState));
+  } catch (error) {
+    storageAvailable = false;
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+})();
+function persist(){
+  try {
+    localStorage.setItem("meuFinanceiro", JSON.stringify(state));
+    storageAvailable = true;
+    return true;
+  } catch (error) {
+    storageAvailable = false;
+    console.warn("Não foi possível salvar os dados neste editor:", error);
+    return false;
+  }
+}
 function money(n){return Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
-function totalIncome(){return state.transactions.filter(x=>x.type==="income").reduce((a,x)=>a+x.amount,0)}
-function totalExpense(){return state.transactions.filter(x=>x.type==="expense").reduce((a,x)=>a+x.amount,0)}
+function localISODate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
+function txISODate(x){if(x.dateISO)return x.dateISO; if(x.date && /^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(x.date)){const [d,m,y]=x.date.split("/");return `${y}-${m}-${d}`} return localISODate()}
+function monthTransactions(){const month=localISODate().slice(0,7);return state.transactions.filter(x=>txISODate(x).slice(0,7)===month)}
+function totalIncome(){return monthTransactions().filter(x=>x.type==="income").reduce((a,x)=>a+Number(x.amount||0),0)}
+function totalExpense(){return monthTransactions().filter(x=>x.type==="expense").reduce((a,x)=>a+Number(x.amount||0),0)}
+let editingIndex=null;
+state.transactions=Array.isArray(state.transactions)?state.transactions:[];
+state.goals=Array.isArray(state.goals)?state.goals:JSON.parse(JSON.stringify(defaultState.goals));
+state.shopping=Array.isArray(state.shopping)?state.shopping:JSON.parse(JSON.stringify(defaultState.shopping));
 function currentGoal(){return state.goals.find(g=>!g.done)||state.goals[state.goals.length-1]}
 function render(){
  const inc=totalIncome(), exp=totalExpense(), available=inc-exp;
@@ -229,22 +262,78 @@ function openTab(id){
 }
 function toast(t){const x=document.getElementById("toast");x.textContent=t;x.style.display="block";setTimeout(()=>x.style.display="none",1700)}
 function addTransaction(){
- const amount=Number(document.getElementById("amount").value),desc=document.getElementById("desc").value.trim(),type=document.getElementById("type").value;
- if(!amount||amount<=0||!desc){toast("Preencha valor e descrição");return}
- state.transactions.unshift({amount,desc,type,date:new Date().toLocaleDateString("pt-BR")});
- document.getElementById("amount").value="";document.getElementById("desc").value="";persist();render();toast("Movimentação adicionada");
+  const amount=Number(document.getElementById("amount").value);
+  const desc=document.getElementById("desc").value.trim();
+  const type=document.getElementById("type").value;
+  const category=document.getElementById("category").value;
+  const dateISO=document.getElementById("txDate").value||localISODate();
+  if(!Number.isFinite(amount)||amount<=0||!desc){toast("Preencha valor e descrição");return}
+  const tx={amount,desc,type,category,dateISO,date:new Date(dateISO+"T12:00:00").toLocaleDateString("pt-BR")};
+  if(editingIndex!==null){
+    state.transactions[editingIndex]=tx;
+    editingIndex=null;
+    document.getElementById("txSubmit").textContent="Adicionar movimentação";
+    document.getElementById("txCancel").style.display="none";
+    toast("Movimentação atualizada");
+  }else{
+    state.transactions.unshift(tx);
+    toast("Movimentação adicionada");
+  }
+  document.getElementById("amount").value="";
+  document.getElementById("desc").value="";
+  document.getElementById("txDate").value=localISODate();
+  persist();render();
+}
+function editTx(i){
+  const x=state.transactions[i]; if(!x)return;
+  editingIndex=i;
+  document.getElementById("type").value=x.type;
+  document.getElementById("amount").value=x.amount;
+  document.getElementById("desc").value=x.desc;
+  document.getElementById("category").value=x.category||"Outros";
+  document.getElementById("txDate").value=txISODate(x);
+  document.getElementById("txSubmit").textContent="Salvar alterações";
+  document.getElementById("txCancel").style.display="block";
+  openTab("expenses");
+  document.getElementById("amount").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function cancelEdit(){
+  editingIndex=null;
+  document.getElementById("amount").value="";
+  document.getElementById("desc").value="";
+  document.getElementById("txDate").value=localISODate();
+  document.getElementById("txSubmit").textContent="Adicionar movimentação";
+  document.getElementById("txCancel").style.display="none";
 }
 function renderTransactions(){
- const box=document.getElementById("transactions");box.innerHTML="";
- if(!state.transactions.length){box.innerHTML='<div class="empty">Nenhuma movimentação registrada.</div>';return}
- state.transactions.forEach((x,i)=>{
-  const d=document.createElement("div");d.className="item";
-  d.innerHTML=`<div style="flex:1"><b>${x.desc}</b><div class="muted">${x.date}</div></div><b class="amount ${x.type==="income"?"good":"bad"}">${x.type==="income"?"+":"−"} ${money(x.amount)}</b><button class="danger smallbtn" onclick="removeTx(${i})">×</button>`;
-  box.appendChild(d);
- })
+  const box=document.getElementById("transactions");box.innerHTML="";
+  const month=document.getElementById("monthFilter").value||localISODate().slice(0,7);
+  const type=document.getElementById("typeFilter").value;
+  const category=document.getElementById("categoryFilter").value;
+  const filtered=state.transactions.map((x,i)=>({...x,_index:i,_date:txISODate(x)}))
+    .filter(x=>x._date.slice(0,7)===month)
+    .filter(x=>type==="all"||x.type===type)
+    .filter(x=>category==="all"||(x.category||"Outros")===category)
+    .sort((a,b)=>b._date.localeCompare(a._date));
+  const inc=filtered.filter(x=>x.type==="income").reduce((a,x)=>a+Number(x.amount||0),0);
+  const exp=filtered.filter(x=>x.type==="expense").reduce((a,x)=>a+Number(x.amount||0),0);
+  document.getElementById("monthSummary").textContent=`No período: entradas ${money(inc)} • gastos ${money(exp)} • saldo ${money(inc-exp)}`;
+  if(!filtered.length){box.innerHTML='<div class="empty">Nenhuma movimentação para os filtros selecionados.</div>';return}
+  filtered.forEach(x=>{
+    const d=document.createElement("div");d.className="item";
+    const title=document.createElement("div");title.style.flex="1";
+    const strong=document.createElement("b");strong.textContent=x.desc;
+    const meta=document.createElement("div");meta.className="muted";meta.textContent=`${x.category||"Outros"} • ${new Date(x._date+"T12:00:00").toLocaleDateString("pt-BR")}`;
+    title.append(strong,meta);
+    const amount=document.createElement("b");amount.className="amount "+(x.type==="income"?"good":"bad");
+    amount.textContent=`${x.type==="income"?"+":"−"} ${money(x.amount)}`;
+    const edit=document.createElement("button");edit.className="secondary smallbtn";edit.textContent="Editar";edit.onclick=()=>editTx(x._index);
+    const del=document.createElement("button");del.className="danger smallbtn";del.textContent="×";del.onclick=()=>removeTx(x._index);
+    d.append(title,amount,edit,del);box.appendChild(d);
+  });
 }
 function removeTx(i){state.transactions.splice(i,1);persist();render()}
-function clearTransactions(){if(confirm("Limpar todas as movimentações?")){state.transactions=[];persist();render()}}
+function clearTransactions(){if(confirm("Limpar todas as movimentações?")){state.transactions=[];cancelEdit();persist();render()}}
 function renderGoals(){
  const box=document.getElementById("goalsList");box.innerHTML="";
  state.goals.forEach((g,i)=>{
@@ -274,9 +363,8 @@ function exportData(){
  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download="meu-financeiro-backup.json";a.click();URL.revokeObjectURL(url);toast("Backup exportado")
 }
-function resetAll(){if(confirm("Isso apagará os dados deste painel. Continuar?")){localStorage.removeItem("meuFinanceiro");state=JSON.parse(JSON.stringify(defaultState));render();toast("Painel zerado")}}
+function resetAll(){if(confirm("Isso apagará os dados deste painel. Continuar?")){try{localStorage.removeItem("meuFinanceiro")}catch(e){storageAvailable=false}state=JSON.parse(JSON.stringify(defaultState));persist();render();toast("Painel zerado")}}
 render();
 </script>
-<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script>
 </body>
 </html>
