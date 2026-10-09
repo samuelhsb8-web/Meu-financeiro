@@ -1,0 +1,282 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="Organize suas entradas, gastos, reserva e metas financeiras.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Meu Financeiro</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--card2:#1d2430;--text:#f3f5f7;--muted:#9da7b5;--line:#2b3340;--accent:#7c9cff;--good:#51d88a;--warn:#f1c75b;--bad:#ff7474}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:560px;margin:auto;min-height:100vh;padding-bottom:82px}
+header{padding:28px 20px 18px;background:linear-gradient(180deg,#151b25,var(--bg))}
+.hello{font-size:13px;color:var(--muted)}h1{font-size:29px;margin:4px 0}
+.subtitle{margin:0;color:var(--muted);font-size:14px}
+main{padding:0 16px}.screen{display:none}.screen.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:17px;margin:12px 0}
+.hero{background:linear-gradient(135deg,#1c2639,#151b24)}
+.label{font-size:12px;color:var(--muted)}.money{font-size:32px;font-weight:800;margin:4px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px}
+.mini b{font-size:19px;display:block;margin-top:5px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h2{font-size:19px;margin:2px 0 13px}h3{font-size:15px;margin:0 0 4px}
+p{line-height:1.45}.muted{color:var(--muted);font-size:13px}
+.progress{height:11px;background:#2a303b;border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--accent);border-radius:99px;width:0}
+.goal{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.goal:last-child{border:0}.bubble{min-width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#2a3346;font-weight:800}
+.goal.done .bubble{background:var(--good);color:#08130c}.goal.current .bubble{background:var(--accent)}
+.goal.done h3{text-decoration:line-through;color:#7f8998}
+button.primary{background:var(--accent);border:0;color:#fff;border-radius:11px;padding:10px 13px;font-weight:750}
+button.secondary{background:#29313d;border:0;color:#fff;border-radius:11px;padding:9px 12px}
+button.danger{background:#632f35;color:#fff;border:0;border-radius:9px;padding:7px 10px}
+input,select{width:100%;background:#10151c;border:1px solid var(--line);color:var(--text);border-radius:11px;padding:11px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.full{grid-column:1/-1}
+.list{margin-top:5px}.item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border:0}.item input[type=checkbox]{width:20px;height:20px;accent-color:var(--good)}
+.item.done .txt{text-decoration:line-through;color:#737d8d}
+.amount.good{color:var(--good)}.amount.bad{color:var(--bad)}
+.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);
+background:rgba(20,25,33,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);
+display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom));z-index:10}
+.nav{border:0;background:transparent;color:#7f8998;padding:7px 2px;border-radius:10px;font-size:11px}
+.nav.active{color:#fff;background:#252d39}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
+.toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%);background:#eef2f7;color:#10141a;padding:10px 14px;border-radius:12px;font-size:13px;display:none;z-index:20}
+.note{background:#211f17;border-left:3px solid var(--warn);padding:12px;border-radius:9px;font-size:13px;color:#ddd5bb}
+.empty{color:var(--muted);font-size:13px;padding:12px 0}
+.smallbtn{padding:7px 9px;font-size:12px}
+@media(max-width:380px){.grid{grid-template-columns:1fr}.money{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="hello">SEU PAINEL PESSOAL</div>
+  <h1>Meu Financeiro 💰</h1>
+  <p class="subtitle">Organize o dinheiro sem complicar.</p>
+</header>
+
+<main>
+<section id="home" class="screen active">
+  <div class="card hero">
+    <div class="label">Dinheiro disponível estimado</div>
+    <div class="money" id="available">R$ 0,00</div>
+    <div class="muted">Entradas − gastos deste mês</div>
+    <div style="height:13px"></div>
+    <div class="row"><span class="muted">Entradas</span><b id="incomeHome">R$ 0,00</b></div>
+    <div class="row"><span class="muted">Gastos</span><b id="expenseHome">R$ 0,00</b></div>
+  </div>
+
+  <div class="grid">
+    <div class="mini"><span class="label">Reserva</span><b id="reserveHome">R$ 700</b></div>
+    <div class="mini"><span class="label">Meta atual</span><b id="goalHome">Dispositivo</b></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2>🎯 Próxima grande meta</h2><span class="label" id="goalPct">35%</span></div>
+    <h3 id="goalTitle">Dispositivo para faculdade</h3>
+    <p class="muted" id="goalDesc">Meta de até R$ 2.000.</p>
+    <div class="progress"><div class="fill" id="goalBar"></div></div>
+    <div class="row" style="margin-top:9px"><span class="muted" id="goalSaved">R$ 700 guardados</span><span class="muted" id="goalRemain">R$ 1.300 faltam</span></div>
+  </div>
+
+  <div class="card">
+    <h2>⚡ Atalhos</h2>
+    <div class="grid">
+      <button class="primary" onclick="openTab('expenses')">+ Registrar gasto</button>
+      <button class="secondary" onclick="openTab('goals')">🎯 Ver metas</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📌 Regra do plano</h2>
+    <div class="note">Cartão pode parcelar o dispositivo <b>ou</b> a CNH — nunca as duas metas ao mesmo tempo.</div>
+  </div>
+</section>
+
+<section id="expenses" class="screen">
+  <div class="card">
+    <h2>💸 Registrar movimentação</h2>
+    <div class="formgrid">
+      <div><label class="label">Tipo</label><select id="type"><option value="expense">Gasto</option><option value="income">Entrada</option></select></div>
+      <div><label class="label">Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"></div>
+      <div class="full"><label class="label">Descrição</label><input id="desc" type="text" placeholder="Ex.: lazer, salário, CNH..."></div>
+      <button class="primary full" onclick="addTransaction()">Adicionar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row"><h2>📋 Movimentações</h2><button class="danger smallbtn" onclick="clearTransactions()">Limpar</button></div>
+    <div id="transactions"></div>
+  </div>
+</section>
+
+<section id="goals" class="screen">
+  <div class="card">
+    <h2>🎯 Minhas metas</h2>
+    <div id="goalsList"></div>
+  </div>
+  <div class="card">
+    <h2>💰 Atualizar reserva</h2>
+    <input id="reserveInput" type="number" step="0.01">
+    <div style="height:9px"></div>
+    <button class="primary" onclick="updateReserve()">Salvar reserva</button>
+  </div>
+  <div class="card">
+    <h2>📈 Guardado para a meta atual</h2>
+    <input id="goalInput" type="number" step="0.01">
+    <div style="height:9px"></div>
+    <button class="primary" onclick="updateGoalSaved()">Atualizar progresso</button>
+  </div>
+</section>
+
+<section id="shopping" class="screen">
+  <div class="card">
+    <h2>🛒 Lista de compras</h2>
+    <p class="muted">Compras menores não devem atropelar as metas grandes.</p>
+    <div id="shoppingList"></div>
+    <div class="formgrid">
+      <input id="shopName" class="full" placeholder="Adicionar item">
+      <input id="shopPrice" type="number" step="0.01" placeholder="Preço (opcional)">
+      <button class="primary" onclick="addShopping()">Adicionar</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🧠 Prioridade</h2>
+    <div class="note">Primeiro necessidades e metas. Depois compras de vontade, desde que o orçamento permita.</div>
+  </div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="card">
+    <h2>⚙️ Configurações</h2>
+    <p class="muted">Os dados ficam salvos neste navegador.</p>
+    <button class="secondary" onclick="exportData()">Exportar meus dados</button>
+    <button class="danger" style="margin-left:6px" onclick="resetAll()">Zerar painel</button>
+  </div>
+  <div class="card">
+    <h2>💡 Orçamento-base atual</h2>
+    <div class="row"><span class="muted">Salário líquido</span><b>R$ 658</b></div>
+    <div class="row"><span class="muted">Apoio mensal</span><b>R$ 100</b></div>
+    <div class="row"><span class="muted">Celular</span><b>R$ 65</b></div>
+    <div class="row"><span class="muted">Spotify</span><b>R$ 6,82</b></div>
+    <div class="row"><span class="muted">Jantar faculdade</span><b>R$ 50</b></div>
+    <div class="row"><span class="muted">Fatura atual</span><b>R$ 320</b></div>
+    <div class="row"><span class="muted">Lazer</span><b>R$ 100</b></div>
+  </div>
+</section>
+</main>
+
+<nav class="bottom">
+  <button class="nav active" data-tab="home" onclick="openTab('home')"><span class="ico">⌂</span>Início</button>
+  <button class="nav" data-tab="expenses" onclick="openTab('expenses')"><span class="ico">↕</span>Gastos</button>
+  <button class="nav" data-tab="goals" onclick="openTab('goals')"><span class="ico">◎</span>Metas</button>
+  <button class="nav" data-tab="shopping" onclick="openTab('shopping')"><span class="ico">□</span>Compras</button>
+</nav>
+<div id="toast" class="toast"></div>
+</div>
+
+<script>
+const defaultState={
+ reserve:700, goalSaved:700,
+ transactions:[],
+ goals:[
+  {name:"Dispositivo para faculdade",target:2000,done:false},
+  {name:"Reserva financeira",target:3000,done:false},
+  {name:"CNH",target:1200,done:false},
+  {name:"Moto",target:10000,done:false}
+ ],
+ shopping:[
+  {name:"Camisa",price:60,done:false},{name:"Cueca",price:70,done:false},
+  {name:"Tênis Logus",price:0,done:false},{name:"Calça",price:0,done:false},
+  {name:"Meia",price:0,done:false},{name:"Fone com fio",price:0,done:false}
+ ]};
+let state=JSON.parse(localStorage.getItem("meuFinanceiro")||"null")||defaultState;
+function persist(){localStorage.setItem("meuFinanceiro",JSON.stringify(state))}
+function money(n){return Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function totalIncome(){return state.transactions.filter(x=>x.type==="income").reduce((a,x)=>a+x.amount,0)}
+function totalExpense(){return state.transactions.filter(x=>x.type==="expense").reduce((a,x)=>a+x.amount,0)}
+function currentGoal(){return state.goals.find(g=>!g.done)||state.goals[state.goals.length-1]}
+function render(){
+ const inc=totalIncome(), exp=totalExpense(), available=inc-exp;
+ document.getElementById("available").textContent=money(available);
+ document.getElementById("incomeHome").textContent=money(inc);
+ document.getElementById("expenseHome").textContent=money(exp);
+ document.getElementById("reserveHome").textContent=money(state.reserve);
+ const g=currentGoal(), pct=Math.min(100,g.target?state.goalSaved/g.target*100:0);
+ document.getElementById("goalHome").textContent=g.name.split(" ")[0];
+ document.getElementById("goalTitle").textContent=g.name;
+ document.getElementById("goalDesc").textContent=`Meta de ${money(g.target)}.`;
+ document.getElementById("goalPct").textContent=Math.round(pct)+"%";
+ document.getElementById("goalBar").style.width=pct+"%";
+ document.getElementById("goalSaved").textContent=money(state.goalSaved)+" guardados";
+ document.getElementById("goalRemain").textContent=money(Math.max(0,g.target-state.goalSaved))+" faltam";
+ document.getElementById("reserveInput").value=state.reserve;
+ document.getElementById("goalInput").value=state.goalSaved;
+ renderTransactions();renderGoals();renderShopping();
+}
+function openTab(id){
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function toast(t){const x=document.getElementById("toast");x.textContent=t;x.style.display="block";setTimeout(()=>x.style.display="none",1700)}
+function addTransaction(){
+ const amount=Number(document.getElementById("amount").value),desc=document.getElementById("desc").value.trim(),type=document.getElementById("type").value;
+ if(!amount||amount<=0||!desc){toast("Preencha valor e descrição");return}
+ state.transactions.unshift({amount,desc,type,date:new Date().toLocaleDateString("pt-BR")});
+ document.getElementById("amount").value="";document.getElementById("desc").value="";persist();render();toast("Movimentação adicionada");
+}
+function renderTransactions(){
+ const box=document.getElementById("transactions");box.innerHTML="";
+ if(!state.transactions.length){box.innerHTML='<div class="empty">Nenhuma movimentação registrada.</div>';return}
+ state.transactions.forEach((x,i)=>{
+  const d=document.createElement("div");d.className="item";
+  d.innerHTML=`<div style="flex:1"><b>${x.desc}</b><div class="muted">${x.date}</div></div><b class="amount ${x.type==="income"?"good":"bad"}">${x.type==="income"?"+":"−"} ${money(x.amount)}</b><button class="danger smallbtn" onclick="removeTx(${i})">×</button>`;
+  box.appendChild(d);
+ })
+}
+function removeTx(i){state.transactions.splice(i,1);persist();render()}
+function clearTransactions(){if(confirm("Limpar todas as movimentações?")){state.transactions=[];persist();render()}}
+function renderGoals(){
+ const box=document.getElementById("goalsList");box.innerHTML="";
+ state.goals.forEach((g,i)=>{
+  const d=document.createElement("div");d.className="goal "+(g.done?"done":i===state.goals.findIndex(x=>!x.done)?"current":"");
+  d.innerHTML=`<div class="bubble">${g.done?"✓":i+1}</div><div style="flex:1"><h3>${g.name}</h3><p class="muted">${money(g.target)}</p></div>`;
+  box.appendChild(d);
+ })
+}
+function updateReserve(){state.reserve=Number(document.getElementById("reserveInput").value)||0;persist();render();toast("Reserva atualizada")}
+function updateGoalSaved(){state.goalSaved=Number(document.getElementById("goalInput").value)||0;const g=currentGoal();if(state.goalSaved>=g.target)g.done=true;persist();render();toast("Meta atualizada")}
+function renderShopping(){
+ const box=document.getElementById("shoppingList");box.innerHTML="";
+ state.shopping.forEach((x,i)=>{
+  const d=document.createElement("div");d.className="item"+(x.done?" done":"");
+  d.innerHTML=`<input type="checkbox" ${x.done?"checked":""} onchange="toggleShop(${i})"><div class="txt" style="flex:1"><b>${x.name}</b><div class="muted">${x.price?money(x.price):"Preço não definido"}</div></div><button class="danger smallbtn" onclick="removeShop(${i})">×</button>`;
+  box.appendChild(d);
+ })
+}
+function toggleShop(i){state.shopping[i].done=!state.shopping[i].done;persist();renderShopping()}
+function removeShop(i){state.shopping.splice(i,1);persist();renderShopping()}
+function addShopping(){
+ const name=document.getElementById("shopName").value.trim(),price=Number(document.getElementById("shopPrice").value)||0;
+ if(!name){toast("Digite o item");return}state.shopping.push({name,price,done:false});
+ document.getElementById("shopName").value="";document.getElementById("shopPrice").value="";persist();renderShopping();toast("Item adicionado")
+}
+function exportData(){
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="meu-financeiro-backup.json";a.click();URL.revokeObjectURL(url);toast("Backup exportado")
+}
+function resetAll(){if(confirm("Isso apagará os dados deste painel. Continuar?")){localStorage.removeItem("meuFinanceiro");state=JSON.parse(JSON.stringify(defaultState));render();toast("Painel zerado")}}
+render();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+MEU FINANCEIRO — PACOTE PWA
+
+Este pacote transforma o painel em um Progressive Web App (PWA), com ícone, modo de tela cheia e cache para abrir offline depois da primeira visita.
+
+IMPORTANTE: um PWA precisa estar publicado em um endereço HTTPS para que o Android permita instalá-lo. Abrir o index.html diretamente pelo gerenciador de arquivos não habilita a instalação PWA.
+
+COMO PUBLICAR DE GRAÇA (GitHub Pages):
+1. No computador ou celular, entre em https://github.com e crie uma conta/entre.
+2. Crie um repositório público chamado meu-financeiro.
+3. Envie os quatro arquivos deste pacote para a raiz do repositório: index.html, manifest.json, sw.js e icon.svg.
+4. Em Settings > Pages, selecione Deploy from a branch, branch main e pasta /(root), e salve.
+5. Aguarde a publicação e abra o endereço HTTPS mostrado pelo GitHub Pages no Chrome do Motorola.
+6. No Chrome, toque no menu ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”. A opção varia conforme a versão do Android/Chrome.
+
+DADOS:
+- Os registros financeiros ficam no armazenamento local do navegador deste dispositivo.
+- Use a opção de backup dentro do painel regularmente. Limpar os dados do navegador pode apagar os registros locais.
+- O modo offline funciona após o primeiro carregamento bem-sucedido; para atualizações futuras, abra o app com internet.

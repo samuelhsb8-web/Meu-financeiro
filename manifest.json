@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Meu Financeiro",
+  "short_name": "Financeiro",
+  "description": "Seu painel pessoal de finanças e metas.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
